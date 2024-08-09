@@ -1,6 +1,7 @@
 package contracts
 
 import (
+	"fmt"
 	"log"
 	"myproject/globals"
 
@@ -58,8 +59,8 @@ func (c *keyGenerator) RequiredGas(input []byte) uint64 {
 func (c *keyGenerator) Run(input []byte) ([]byte, error) {
 	//检查用户名是否注册过
 	_, err := globals.GetUser(string(input))
-	if err != nil {
-		log.Fatalf("该用户已被注册")
+	if err == nil {
+		return []byte{}, fmt.Errorf("用户已注册")
 	}
 
 	kgen := rlwe.NewKeyGenerator(globals.Params)
@@ -71,6 +72,7 @@ func (c *keyGenerator) Run(input []byte) ([]byte, error) {
 		log.Fatalf("Failed to serialize secret key: %v", err)
 	}
 	globals.RegisterUser(string(input), string(skCode))
+
 	// fmt.Printf("Private Key: %v\n", sk)
 	// fmt.Printf("Public Key: %v\n", pk)
 	return skCode, nil

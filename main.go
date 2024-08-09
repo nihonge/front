@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"myproject/contracts"
 	"os"
@@ -33,6 +34,24 @@ func main() {
 		input = strings.TrimSpace(input)
 
 		switch input {
+		case "1":
+			fmt.Print("请输入用户名:")
+			username, _ := reader.ReadString('\n')
+			// 创建 keyGenerator 实例
+			kg := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x4})]
+
+			// 调用 Run 方法
+			output, err := kg.Run([]byte(username))
+			switch err {
+			case fmt.Errorf("用户已注册"):
+				fmt.Println("用户已注册")
+			case nil:
+			default:
+				fmt.Println("密钥生成失败")
+			}
+			//将密钥转化为16进制可读字符串
+			hexString := hex.EncodeToString(output)
+			fmt.Printf("生成密钥为%s\n", hexString[:40])
 		case "2":
 			fmt.Print("输入明文: ")
 			plaintext, _ := reader.ReadString('\n')
@@ -40,12 +59,6 @@ func main() {
 			fmt.Print("输入密钥: ")
 			key, _ := reader.ReadString('\n')
 			key = strings.TrimSpace(key)
-			ciphertext, err := encrypt.Encrypt(plaintext, key)
-			if err != nil {
-				fmt.Println("加密错误:", err)
-			} else {
-				fmt.Println("加密结果:", ciphertext)
-			}
 		case "3":
 			fmt.Print("输入密文: ")
 			ciphertext, _ := reader.ReadString('\n')
@@ -53,16 +66,7 @@ func main() {
 			fmt.Print("输入密钥: ")
 			key, _ := reader.ReadString('\n')
 			key = strings.TrimSpace(key)
-			plaintext, err := encrypt.Decrypt(ciphertext, key)
-			if err != nil {
-				fmt.Println("解密错误:", err)
-			} else {
-				fmt.Println("解密结果:", plaintext)
-			}
 		case "4":
-			a, b := getTwoIntegers(reader)
-			result := compute.Subtract(a, b)
-			fmt.Printf("结果: %d - %d = %d\n", a, b, result)
 		case "5":
 			fmt.Println("退出程序")
 			// 在程序退出时保存数据

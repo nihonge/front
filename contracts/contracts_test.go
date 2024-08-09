@@ -17,9 +17,7 @@ func TestKeyGenerator_Run(t *testing.T) {
 	kg := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x4})]
 
 	// 调用 Run 方法
-	fmt.Println("before")
 	output, err := kg.Run([]byte(name))
-	fmt.Println("after")
 	if err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
