@@ -23,7 +23,7 @@ func TestKeyGenerator_Run(t *testing.T) {
 	}
 
 	// 验证
-	secret, err := globals.GetUser(name)
+	secret, err := globals.GetUserKey(name)
 	if err != nil {
 		t.Fatalf("用户未注册成功")
 	}

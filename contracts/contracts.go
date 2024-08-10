@@ -58,7 +58,7 @@ func (c *keyGenerator) RequiredGas(input []byte) uint64 {
 }
 func (c *keyGenerator) Run(input []byte) ([]byte, error) {
 	//检查用户名是否注册过
-	_, err := globals.GetUser(string(input))
+	_, err := globals.GetUserKey(string(input))
 	if err == nil {
 		return []byte{}, fmt.Errorf("用户已注册")
 	}
