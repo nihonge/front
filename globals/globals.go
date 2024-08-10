@@ -81,7 +81,7 @@ func loadUserData() {
 		log.Fatalf("Failed to unmarshal user data: %v", err)
 	}
 
-	if _, err := os.Stat(private_key_file); os.IsNotExist(err) {
+	if _, err := os.Stat(address_file); os.IsNotExist(err) {
 		// 文件不存在，不需要加载数据
 		fmt.Println("地址文件数据加载完毕")
 		return
@@ -92,7 +92,7 @@ func loadUserData() {
 		log.Fatalf("Failed to read user data from file: %v", err)
 	}
 
-	err = json.Unmarshal(data, &address_file)
+	err = json.Unmarshal(data, &address_store)
 	if err != nil {
 		log.Fatalf("Failed to unmarshal user data: %v", err)
 	}
