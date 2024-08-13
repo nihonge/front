@@ -21,7 +21,8 @@ var PrecompiledContractsMap = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{0x4}): &keyGenerator{},
 }
 
-// 明文加密为同态加密密文
+// 明文加密为同态加密密文，并上链
+// 接受密钥和明文作为输入
 type encrypt struct{}
 
 func (c *encrypt) RequiredGas(input []byte) uint64 {
@@ -42,6 +43,7 @@ func (c *decrypt) Run(input []byte) ([]byte, error) {
 	return []byte{1, 2, 3}, nil
 }
 
+// 计算链上密态数据，目前为求和
 type compute struct{}
 
 func (c *compute) RequiredGas(input []byte) uint64 {

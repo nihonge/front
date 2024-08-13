@@ -2,7 +2,7 @@ package contracts_test
 
 import (
 	"fmt"
-	"myproject/contracts"
+	"myproject/preCompiledContracts"
 	"myproject/globals"
 	"testing"
 

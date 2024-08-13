@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"myproject/contracts"
 	"myproject/globals"
+	"myproject/preCompiledContracts"
 	"os"
 	"strconv"
 	"strings"
@@ -23,7 +23,7 @@ func main() {
 		fmt.Println("2. 加密")
 		fmt.Println("3. 解密")
 		fmt.Println("4. 密态数据计算")
-		fmt.Println("5. 查看当前用户")
+		fmt.Println("5. 查看用户列表")
 		fmt.Println("6. 退出")
 		fmt.Print("输入操作编号: ")
 
