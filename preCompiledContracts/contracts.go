@@ -30,7 +30,18 @@ func (c *encrypt) RequiredGas(input []byte) uint64 {
 	return 0
 }
 func (c *encrypt) Run(input []byte) ([]byte, error) {
-	//使用lattigo的算法
+	decode, err := globals.Decode(input)
+	if err != nil {
+		return []byte{}, fmt.Errorf("解码错误")
+	}
+	sk := decode[0]
+
+	// Encryptor
+	enc := rlwe.NewEncryptor(globals.Params, sk)
+	var ct *rlwe.Ciphertext //密文
+	if ct, err = enc.EncryptNew(pt); err != nil {
+		panic(err)
+	}
 	return []byte{1, 2, 3}, nil
 }
 
@@ -50,6 +61,7 @@ func (c *compute) RequiredGas(input []byte) uint64 {
 	return 0
 }
 func (c *compute) Run(input []byte) ([]byte, error) {
+	// 第一个字节是运算方法，后面是密文序列
 	return []byte{1, 2, 3}, nil
 }
 

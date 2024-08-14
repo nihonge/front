@@ -2,23 +2,23 @@ package globals
 
 import (
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/tuneinsight/lattigo/v5/he/hefloat"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
-
-	"github.com/tuneinsight/lattigo/v5/he/hefloat"
 )
 
 // 声明全局变量
 
 var (
 	Params            hefloat.Parameters        //实数同态加密参数
-	private_key_store = make(map[string]string) // 用于存储用户密钥的全局变量
+	private_key_store = make(map[string]string) // 用于存储用户密钥的全局变量 sk.MarshalBinary(),将密钥转为字节流再转为字符串
 	address_store     = make(map[string]string) // 用于存储用户地址的全局变量
 	mu                sync.Mutex                // 用于确保并发安全
 	folderName        string                    // 数据存储的文件夹名 /data
@@ -110,7 +110,7 @@ func RegisterUser(username, password string) error {
 	}
 
 	private_key_store[username] = password
-	address_store[username] = keyToAddr(password)
+	address_store[username] = KeyToAddr(password)
 	fmt.Printf("User %s registered successfully\n", username)
 	saveUserData()
 	return nil
@@ -182,20 +182,63 @@ func GetUserAddr(username string) (string, error) {
 
 // 展示用户名和地址
 func ShowUser() {
-	fmt.Printf("\n共%d人 ", len(address_store))
-	fmt.Printf("%-10s %-10s\n", "用户名称", "地址")
+	fmt.Printf("\n共%d人\n", len(address_store))
+	fmt.Printf("%-20s %-20s\n", "用户名称", "地址")
 
 	for key, val := range address_store {
-		fmt.Printf("%-10s %-10s\n", key, val)
+		fmt.Printf("%-20s %-20s\n", key, val)
 	}
 	fmt.Println()
 }
 
 // 密钥转地址 → 计算 SHA-256 哈希值的字符串
-func keyToAddr(key string) string {
+func KeyToAddr(key string) string {
 	hash := sha256.New()
 	hash.Write([]byte(key))
 	hashBytes := hash.Sum(nil)
 	// 将哈希值转换为十六进制字符串
 	return hex.EncodeToString(hashBytes)
+}
+
+// encode 将多个byte[]编码为一个byte[]，使用四字节长度+内容的方案
+func Encode(data ...[]byte) []byte {
+	var result []byte
+
+	for _, b := range data {
+		length := len(b)
+		// 4字节存储长度
+		lenBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(lenBytes, uint32(length))
+
+		// 将长度和内容加入结果
+		result = append(result, lenBytes...)
+		result = append(result, b...)
+	}
+
+	return result
+}
+
+// decode 从编码的byte[]中解码出多个byte[]
+func Decode(encodedData []byte) ([][]byte, error) {
+	var result [][]byte
+	offset := 0
+
+	for offset < len(encodedData) {
+		// 读取长度（4字节）
+		if offset+4 > len(encodedData) {
+			return nil, fmt.Errorf("invalid encoded data")
+		}
+		length := int(binary.BigEndian.Uint32(encodedData[offset : offset+4]))
+		offset += 4
+
+		// 读取内容
+		if offset+length > len(encodedData) {
+			return nil, fmt.Errorf("invalid encoded data")
+		}
+		content := encodedData[offset : offset+length]
+		result = append(result, content)
+		offset += length
+	}
+
+	return result, nil
 }

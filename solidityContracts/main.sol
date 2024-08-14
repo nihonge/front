@@ -36,7 +36,7 @@ contract PrecompiledContractHandler {
     }
 
     // 处理链上对应ID的数据，进行密态数据计算并返回结果
-    function data_process() public view returns (bytes memory) {
+    function data_process(uint256 id) public view returns (bytes memory) {
         require(userStorage[msg.sender].encryptedData.length > 0, "No encrypted data found.");
 
         bytes memory encryptedData = userStorage[msg.sender].encryptedData;
