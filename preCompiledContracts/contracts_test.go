@@ -1,13 +1,13 @@
 package contracts_test
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/tuneinsight/lattigo/v5/core/rlwe"
-	"github.com/tuneinsight/lattigo/v5/he/hefloat"
 	"myproject/globals"
 	"myproject/preCompiledContracts"
 	"testing"
+
+	"github.com/tuneinsight/lattigo/v5/core/rlwe"
+	"github.com/tuneinsight/lattigo/v5/he/hefloat"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -74,32 +74,45 @@ func TestComputeRun(t *testing.T) {
 	kgen := rlwe.NewKeyGenerator(globals.Params)
 	sk := kgen.GenSecretKeyNew()
 	ecd := hefloat.NewEncoder(globals.Params) // 用于把go中切片类型进行编码转换
-	sk_bytes, err := sk.MarshalBinary()       //将密钥转化为字节流方便调用预编译合约
+	sk_byte, err := sk.MarshalBinary()        //将密钥转化为字节流方便调用预编译合约
 	if err != nil {
 		t.Errorf("Failed to serialize secret key: %v", err)
 	}
 	// 定义go中明文
-	values := make([]float64, 2)
-	values[0] = 100
-	values[1] = 100
-	pt := hefloat.NewPlaintext(globals.Params, 2) //初始化明文
+	values1 := []float64{1.1, 2.2, 3.3}
+	values2 := []float64{4.4, 5.5, 6.6}
+	pt1 := hefloat.NewPlaintext(globals.Params, 2) //初始化明文
+	pt2 := hefloat.NewPlaintext(globals.Params, 2) //初始化明文
 	// Encodes the vector of plaintext values
-	if err = ecd.Encode(values, pt); err != nil {
+	if err = ecd.Encode(values1, pt1); err != nil {
 		t.Errorf("Failed to encode values to plaintext: %v", err)
 	}
-	pt_byte, err := pt.MarshalBinary()
+	pt1_byte, err := pt1.MarshalBinary()
+	if err != nil {
+		t.Errorf("明文序列化失败: %v", err)
+	}
+	if err = ecd.Encode(values2, pt2); err != nil {
+		t.Errorf("Failed to encode values to plaintext: %v", err)
+	}
+	pt2_byte, err := pt2.MarshalBinary()
 	if err != nil {
 		t.Errorf("明文序列化失败: %v", err)
 	}
 
 	encrypt := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x1})]
-	decrypt := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x2})]
-	compute := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x3})]
+	// decrypt := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x2})]
+	// compute := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x3})]
 
 	// 加密
-	ciphertext, err := encrypt.Run(globals.Encode(sk_bytes, pt_byte))
+	ciphertext_bytes, err := encrypt.Run(globals.Encode(sk_byte, pt1_byte, pt2_byte))
 	if err != nil {
 		t.Errorf("加密出现错误:%v", err)
+	}
+	ciphertext_byte, err := globals.Decode(ciphertext_bytes)
+	var ct rlwe.Ciphertext
+	err = ct.UnmarshalBinary(ciphertext_byte)
+	if err != nil {
+		t.Errorf("反序列化错误:%v", err)
 	}
 
 	// 密态数据计算
@@ -107,7 +120,4 @@ func TestComputeRun(t *testing.T) {
 	// 解密
 
 	// 验证结果
-	if !bytes.Equal(output, expectedOutput) {
-		t.Errorf("Run() = %v; want %v", output, expectedOutput)
-	}
 }

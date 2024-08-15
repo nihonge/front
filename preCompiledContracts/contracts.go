@@ -32,17 +32,29 @@ func (c *encrypt) RequiredGas(input []byte) uint64 {
 func (c *encrypt) Run(input []byte) ([]byte, error) {
 	decode, err := globals.Decode(input)
 	if err != nil {
-		return []byte{}, fmt.Errorf("解码错误")
+		return []byte{}, fmt.Errorf("解码错误:%v", err)
 	}
-	sk := decode[0]
+	fmt.Println("字节数组个数:", len(decode))
+	var sk rlwe.SecretKey
+	sk.UnmarshalBinary(decode[0])
 
 	// Encryptor
-	enc := rlwe.NewEncryptor(globals.Params, sk)
+	var pt rlwe.Plaintext
+	enc := rlwe.NewEncryptor(globals.Params, &sk)
 	var ct *rlwe.Ciphertext //密文
-	if ct, err = enc.EncryptNew(pt); err != nil {
-		panic(err)
+	var encrypted_data [][]byte
+	for i := range decode[1:] {
+		pt.UnmarshalBinary(decode[i])
+		if ct, err = enc.EncryptNew(&pt); err != nil {
+			return []byte{}, fmt.Errorf("加密错误:%v", err)
+		}
+		ct_byte, err := ct.MarshalBinary()
+		if err != nil {
+			return []byte{}, fmt.Errorf("密文序列化错误:%v", err)
+		}
+		encrypted_data = append(encrypted_data, ct_byte)
 	}
-	return []byte{1, 2, 3}, nil
+	return globals.Encode(encrypted_data...), nil
 }
 
 type decrypt struct{}
