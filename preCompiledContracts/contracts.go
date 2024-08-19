@@ -1,12 +1,13 @@
 package contracts
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"myproject/globals"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/tuneinsight/lattigo/v5/core/rlwe"
+	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 )
 
 type PrecompiledContract interface {
@@ -34,16 +35,15 @@ func (c *encrypt) Run(input []byte) ([]byte, error) {
 	if err != nil {
 		return []byte{}, fmt.Errorf("解码错误:%v", err)
 	}
-	fmt.Println("字节数组个数:", len(decode))
+	fmt.Println("encrypt:字节数组个数:", len(decode))
 	var sk rlwe.SecretKey
 	sk.UnmarshalBinary(decode[0])
-
 	// Encryptor
 	var pt rlwe.Plaintext
 	enc := rlwe.NewEncryptor(globals.Params, &sk)
 	var ct *rlwe.Ciphertext //密文
 	var encrypted_data [][]byte
-	for i := range decode[1:] {
+	for i := 1; i < len(decode); i++ {
 		pt.UnmarshalBinary(decode[i])
 		if ct, err = enc.EncryptNew(&pt); err != nil {
 			return []byte{}, fmt.Errorf("加密错误:%v", err)
@@ -74,6 +74,23 @@ func (c *compute) RequiredGas(input []byte) uint64 {
 }
 func (c *compute) Run(input []byte) ([]byte, error) {
 	// 第一个字节是运算方法，后面是密文序列
+	ciphertext_bytes, err := globals.Decode(input)
+	if err != nil {
+		return []byte{}, fmt.Errorf("%v", err)
+	}
+	fmt.Println("compute:字节数组个数:", len(ciphertext_bytes))
+	if bytes.Equal(ciphertext_bytes[0], globals.Addition) {
+		pt1_byte := ciphertext_bytes[1]
+		pt2_byte := ciphertext_bytes[2]
+		eva := rlwe.NewEvaluator()
+		fmt.Println("加法")
+	} else if bytes.Equal(ciphertext_bytes[0], globals.Subtraction) {
+		fmt.Println("减法")
+	} else if bytes.Equal(ciphertext_bytes[0], globals.Multiplication) {
+		fmt.Println("乘法")
+	} else if bytes.Equal(ciphertext_bytes[0], globals.Division) {
+		fmt.Println("除法")
+	}
 	return []byte{1, 2, 3}, nil
 }
 

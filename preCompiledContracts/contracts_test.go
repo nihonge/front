@@ -6,8 +6,8 @@ import (
 	"myproject/preCompiledContracts"
 	"testing"
 
-	"github.com/tuneinsight/lattigo/v5/core/rlwe"
-	"github.com/tuneinsight/lattigo/v5/he/hefloat"
+	"github.com/tuneinsight/lattigo/v6/core/rlwe"
+	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -71,18 +71,18 @@ func TestComputeRequiredGas(t *testing.T) {
 
 // 测试加密，密态数据计算和解密后是否正确
 func TestComputeRun(t *testing.T) {
-	kgen := rlwe.NewKeyGenerator(globals.Params)
+	kgen := ckks.NewKeyGenerator(globals.Params)
 	sk := kgen.GenSecretKeyNew()
-	ecd := hefloat.NewEncoder(globals.Params) // 用于把go中切片类型进行编码转换
-	sk_byte, err := sk.MarshalBinary()        //将密钥转化为字节流方便调用预编译合约
+	ecd := ckks.NewEncoder(globals.Params) // 用于把go中切片类型进行编码转换
+	sk_byte, err := sk.MarshalBinary()     //将密钥转化为字节流方便调用预编译合约
 	if err != nil {
 		t.Errorf("Failed to serialize secret key: %v", err)
 	}
 	// 定义go中明文
 	values1 := []float64{1.1, 2.2, 3.3}
 	values2 := []float64{4.4, 5.5, 6.6}
-	pt1 := hefloat.NewPlaintext(globals.Params, 2) //初始化明文
-	pt2 := hefloat.NewPlaintext(globals.Params, 2) //初始化明文
+	pt1 := ckks.NewPlaintext(globals.Params, 2) //初始化明文
+	pt2 := ckks.NewPlaintext(globals.Params, 2) //初始化明文
 	// Encodes the vector of plaintext values
 	if err = ecd.Encode(values1, pt1); err != nil {
 		t.Errorf("Failed to encode values to plaintext: %v", err)
@@ -98,24 +98,27 @@ func TestComputeRun(t *testing.T) {
 	if err != nil {
 		t.Errorf("明文序列化失败: %v", err)
 	}
-
 	encrypt := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x1})]
 	// decrypt := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x2})]
-	// compute := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x3})]
+	compute := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x3})]
 
-	// 加密
-	ciphertext_bytes, err := encrypt.Run(globals.Encode(sk_byte, pt1_byte, pt2_byte))
+	// 加密 _byte代表[]byte,_bytes代表[][]byte
+	ciphertext_byte, err := encrypt.Run(globals.Encode(sk_byte, pt1_byte, pt2_byte))
 	if err != nil {
 		t.Errorf("加密出现错误:%v", err)
 	}
-	ciphertext_byte, err := globals.Decode(ciphertext_bytes)
-	var ct rlwe.Ciphertext
-	err = ct.UnmarshalBinary(ciphertext_byte)
-	if err != nil {
-		t.Errorf("反序列化错误:%v", err)
-	}
 
 	// 密态数据计算
+	ciphertext_bytes, err := globals.Decode(ciphertext_byte)
+	if err != nil {
+		t.Errorf("global编码错误:%v", err)
+	}
+	eva := ckks.NewEvaluator()
+	ciphertext_bytes = append([][]byte{globals.Addition}, ciphertext_bytes...)
+	_, err = compute.Run(globals.Encode(ciphertext_bytes...))
+	if err != nil {
+		t.Errorf("密态数据计算出错:%v", err)
+	}
 
 	// 解密
 

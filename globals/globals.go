@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/tuneinsight/lattigo/v5/he/hefloat"
+	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,15 +15,18 @@ import (
 )
 
 // 声明全局变量
-
 var (
-	Params            hefloat.Parameters        //实数同态加密参数
+	Params            ckks.Parameters           //实数同态加密参数
 	private_key_store = make(map[string]string) // 用于存储用户密钥的全局变量 sk.MarshalBinary(),将密钥转为字节流再转为字符串
 	address_store     = make(map[string]string) // 用于存储用户地址的全局变量
 	mu                sync.Mutex                // 用于确保并发安全
 	folderName        string                    // 数据存储的文件夹名 /data
 	private_key_file  string
 	address_file      string
+	Addition          = []byte("ADD")
+	Subtraction       = []byte("SUB")
+	Multiplication    = []byte("MUL")
+	Division          = []byte("DIV")
 )
 
 func init() {
@@ -46,8 +49,8 @@ func init() {
 	// 128-bit secure parameters enabling depth-7 circuits.
 	// LogN:14, LogQP: 431.
 	// 加密参数
-	if Params, err = hefloat.NewParametersFromLiteral(
-		hefloat.ParametersLiteral{
+	if Params, err = ckks.NewParametersFromLiteral(
+		ckks.ParametersLiteral{
 			LogN:            14,                                    // log2(ring degree)
 			LogQ:            []int{55, 45, 45, 45, 45, 45, 45, 45}, // log2(primes Q) (ciphertext modulus)
 			LogP:            []int{61},                             // log2(primes P) (auxiliary modulus)
