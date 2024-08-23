@@ -42,7 +42,7 @@ func init() {
 	// 获取项目根目录路径（移除 'globals' 目录）
 	projectRoot := filepath.Dir(filepath.Dir(filename))
 	// 构建目标文件的路径
-	folderName = filepath.Join(projectRoot, "data")
+	folderName = filepath.Join(projectRoot, "data_client")
 	private_key_file = filepath.Join(folderName, "user_private_key.json")
 	address_file = filepath.Join(folderName, "user_address.json")
 

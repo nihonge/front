@@ -16,10 +16,10 @@ type PrecompiledContract interface {
 }
 
 var PrecompiledContractsMap = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{0x1}): &encrypt{},
-	common.BytesToAddress([]byte{0x2}): &decrypt{},
-	common.BytesToAddress([]byte{0x3}): &compute{},
-	common.BytesToAddress([]byte{0x4}): &keyGenerator{},
+	common.BytesToAddress([]byte{0x1}): &compute{},
+	// common.BytesToAddress([]byte{0x2}): &encrypt{},
+	// common.BytesToAddress([]byte{0x3}): &decrypt{},
+	// common.BytesToAddress([]byte{0x4}): &keyGenerator{},
 }
 
 // 明文加密为同态加密密文，并上链
