@@ -3,7 +3,6 @@ package contracts
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"myproject/globals"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -24,47 +23,47 @@ var PrecompiledContractsMap = map[common.Address]PrecompiledContract{
 
 // 明文加密为同态加密密文，并上链
 // 接受密钥和明文作为输入
-type encrypt struct{}
+// type encrypt struct{}
 
-func (c *encrypt) RequiredGas(input []byte) uint64 {
-	//gas需要参考现有的预编译合约，目前只能根据计算量大致定义
-	return 0
-}
-func (c *encrypt) Run(input []byte) ([]byte, error) {
-	decode, err := globals.Decode(input)
-	if err != nil {
-		return []byte{}, fmt.Errorf("解码错误:%v", err)
-	}
-	fmt.Println("encrypt:字节数组个数:", len(decode))
-	var sk rlwe.SecretKey
-	sk.UnmarshalBinary(decode[0])
-	// Encryptor
-	var pt rlwe.Plaintext
-	enc := rlwe.NewEncryptor(globals.Params, &sk)
-	var ct *rlwe.Ciphertext //密文
-	var encrypted_data [][]byte
-	for i := 1; i < len(decode); i++ {
-		pt.UnmarshalBinary(decode[i])
-		if ct, err = enc.EncryptNew(&pt); err != nil {
-			return []byte{}, fmt.Errorf("加密错误:%v", err)
-		}
-		ct_byte, err := ct.MarshalBinary()
-		if err != nil {
-			return []byte{}, fmt.Errorf("密文序列化错误:%v", err)
-		}
-		encrypted_data = append(encrypted_data, ct_byte)
-	}
-	return globals.Encode(encrypted_data...), nil
-}
+// func (c *encrypt) RequiredGas(input []byte) uint64 {
+// 	//gas需要参考现有的预编译合约，目前只能根据计算量大致定义
+// 	return 0
+// }
+// func (c *encrypt) Run(input []byte) ([]byte, error) {
+// 	decode, err := globals.Decode(input)
+// 	if err != nil {
+// 		return []byte{}, fmt.Errorf("解码错误:%v", err)
+// 	}
+// 	fmt.Println("encrypt:字节数组个数:", len(decode))
+// 	var sk rlwe.SecretKey
+// 	sk.UnmarshalBinary(decode[0])
+// 	// Encryptor
+// 	var pt rlwe.Plaintext
+// 	enc := rlwe.NewEncryptor(globals.Params, &sk)
+// 	var ct *rlwe.Ciphertext //密文
+// 	var encrypted_data [][]byte
+// 	for i := 1; i < len(decode); i++ {
+// 		pt.UnmarshalBinary(decode[i])
+// 		if ct, err = enc.EncryptNew(&pt); err != nil {
+// 			return []byte{}, fmt.Errorf("加密错误:%v", err)
+// 		}
+// 		ct_byte, err := ct.MarshalBinary()
+// 		if err != nil {
+// 			return []byte{}, fmt.Errorf("密文序列化错误:%v", err)
+// 		}
+// 		encrypted_data = append(encrypted_data, ct_byte)
+// 	}
+// 	return globals.Encode(encrypted_data...), nil
+// }
 
-type decrypt struct{}
+// type decrypt struct{}
 
-func (c *decrypt) RequiredGas(input []byte) uint64 {
-	return 0
-}
-func (c *decrypt) Run(input []byte) ([]byte, error) {
-	return []byte{1, 2, 3}, nil
-}
+// func (c *decrypt) RequiredGas(input []byte) uint64 {
+// 	return 0
+// }
+// func (c *decrypt) Run(input []byte) ([]byte, error) {
+// 	return []byte{1, 2, 3}, nil
+// }
 
 // 计算链上密态数据，目前为求和
 type compute struct{}
@@ -94,29 +93,29 @@ func (c *compute) Run(input []byte) ([]byte, error) {
 	return []byte{1, 2, 3}, nil
 }
 
-type keyGenerator struct{}
+// type keyGenerator struct{}
 
-func (c *keyGenerator) RequiredGas(input []byte) uint64 {
-	return 0
-}
-func (c *keyGenerator) Run(input []byte) ([]byte, error) {
-	//检查用户名是否注册过
-	_, err := globals.GetUserKey(string(input))
-	if err == nil {
-		return []byte{}, fmt.Errorf("用户已注册")
-	}
+// func (c *keyGenerator) RequiredGas(input []byte) uint64 {
+// 	return 0
+// }
+// func (c *keyGenerator) Run(input []byte) ([]byte, error) {
+// 	//检查用户名是否注册过
+// 	_, err := globals.GetUserKey(string(input))
+// 	if err == nil {
+// 		return []byte{}, fmt.Errorf("用户已注册")
+// 	}
 
-	kgen := rlwe.NewKeyGenerator(globals.Params)
-	sk := kgen.GenSecretKeyNew()
-	// pk := kgen.GenPublicKeyNew(sk)
+// 	kgen := rlwe.NewKeyGenerator(globals.Params)
+// 	sk := kgen.GenSecretKeyNew()
+// 	// pk := kgen.GenPublicKeyNew(sk)
 
-	skCode, err := sk.MarshalBinary()
-	if err != nil {
-		log.Fatalf("Failed to serialize secret key: %v", err)
-	}
-	globals.RegisterUser(string(input), string(skCode))
+// 	skCode, err := sk.MarshalBinary()
+// 	if err != nil {
+// 		log.Fatalf("Failed to serialize secret key: %v", err)
+// 	}
+// 	globals.RegisterUser(string(input), string(skCode))
 
-	// fmt.Printf("Private Key: %v\n", sk)
-	// fmt.Printf("Public Key: %v\n", pk)
-	return skCode, nil
-}
+// 	// fmt.Printf("Private Key: %v\n", sk)
+// 	// fmt.Printf("Public Key: %v\n", pk)
+// 	return skCode, nil
+// }

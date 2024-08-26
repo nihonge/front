@@ -1,8 +1,11 @@
 package client_utils
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
+	"io"
 	"log"
 	"myproject/globals"
 )
@@ -26,9 +29,46 @@ func (c *keyGenerator) GenerateKey(input string) ([]byte, error) {
 	if err != nil {
 		log.Fatalf("Failed to serialize secret key: %v", err)
 	}
-	globals.RegisterUser(input, string(skCode))
+	compressedSkcode, _ := Compress(skCode)
+	globals.RegisterUser(input, string(compressedSkcode))
 
 	// fmt.Printf("Private Key: %v\n", sk)
 	// fmt.Printf("Public Key: %v\n", pk)
 	return skCode, nil
+}
+
+// Compress 将输入的字节数组压缩为 gzip 格式
+func Compress(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	gzipWriter := gzip.NewWriter(&buf)
+
+	_, err := gzipWriter.Write(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// 调用 Close 以确保数据完整写入
+	err = gzipWriter.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func Decompress(compressedData []byte) ([]byte, error) {
+	buf := bytes.NewReader(compressedData)
+	gzipReader, err := gzip.NewReader(buf)
+	if err != nil {
+		return nil, err
+	}
+	defer gzipReader.Close()
+
+	var result bytes.Buffer
+	_, err = io.Copy(&result, gzipReader)
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Bytes(), nil
 }
