@@ -2,54 +2,14 @@ package contracts_test
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/tuneinsight/lattigo/v6/core/rlwe"
+	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
+	"myproject/client_utils"
 	"myproject/globals"
 	"myproject/preCompiledContracts"
 	"testing"
-
-	"github.com/tuneinsight/lattigo/v6/core/rlwe"
-	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
-
-	"github.com/ethereum/go-ethereum/common"
 )
-
-// TestKeyGenerator_Run tests the Run method of the keyGenerator.
-func TestKeyGenerator_Run(t *testing.T) {
-	// 初始化测试参数
-	name := "nihonge5201314"
-	// 创建 keyGenerator 实例
-	kg := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x4})]
-
-	// 调用 Run 方法
-	output, err := kg.Run([]byte(name))
-	if err != nil {
-		t.Fatalf("Run() error = %v", err)
-	}
-
-	// 验证
-	secret, err := globals.GetUserKey(name)
-	if err != nil {
-		t.Fatalf("用户未注册成功")
-	}
-	if string(output) != secret {
-		t.Fatalf("密码存储不正确")
-	}
-	fmt.Printf("用户%s注册成功\n", name)
-	globals.DeleteUser(name)
-}
-
-// TestKeyGenerator_RequiredGas tests the RequiredGas method of the keyGenerator.
-func TestKeyGenerator_RequiredGas(t *testing.T) {
-	kg := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x4})]
-
-	// 测试 RequiredGas 方法
-	input := []byte("test input")
-	expectedGas := uint64(0) // 预期的Gas费用
-
-	actualGas := kg.RequiredGas(input)
-	if actualGas != expectedGas {
-		t.Errorf("RequiredGas() = %v, want %v", actualGas, expectedGas)
-	}
-}
 
 func TestComputeRequiredGas(t *testing.T) {
 	e := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x1})]
@@ -71,56 +31,85 @@ func TestComputeRequiredGas(t *testing.T) {
 
 // 测试加密，密态数据计算和解密后是否正确
 func TestComputeRun(t *testing.T) {
+	var err error
 	kgen := ckks.NewKeyGenerator(globals.Params)
 	sk := kgen.GenSecretKeyNew()
-	ecd := ckks.NewEncoder(globals.Params) // 用于把go中切片类型进行编码转换
-	sk_byte, err := sk.MarshalBinary()     //将密钥转化为字节流方便调用预编译合约
-	if err != nil {
-		t.Errorf("Failed to serialize secret key: %v", err)
-	}
 	// 定义go中明文
 	values1 := []float64{1.1, 2.2, 3.3}
 	values2 := []float64{4.4, 5.5, 6.6}
-	pt1 := ckks.NewPlaintext(globals.Params, 2) //初始化明文
-	pt2 := ckks.NewPlaintext(globals.Params, 2) //初始化明文
-	// Encodes the vector of plaintext values
-	if err = ecd.Encode(values1, pt1); err != nil {
-		t.Errorf("Failed to encode values to plaintext: %v", err)
-	}
-	pt1_byte, err := pt1.MarshalBinary()
-	if err != nil {
-		t.Errorf("明文序列化失败: %v", err)
-	}
-	if err = ecd.Encode(values2, pt2); err != nil {
-		t.Errorf("Failed to encode values to plaintext: %v", err)
-	}
-	pt2_byte, err := pt2.MarshalBinary()
-	if err != nil {
-		t.Errorf("明文序列化失败: %v", err)
-	}
-	encrypt := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x1})]
-	// decrypt := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x2})]
-	compute := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x3})]
 
-	// 加密 _byte代表[]byte,_bytes代表[][]byte
-	ciphertext_byte, err := encrypt.Run(globals.Encode(sk_byte, pt1_byte, pt2_byte))
-	if err != nil {
-		t.Errorf("加密出现错误:%v", err)
-	}
+	//本地加密成密文
+	myenc := client_utils.Encryptor{}
+	st1 := myenc.Encrypt(sk, values1)
+	st2 := myenc.Encrypt(sk, values2)
 
 	// 密态数据计算
-	ciphertext_bytes, err := globals.Decode(ciphertext_byte)
-	if err != nil {
-		t.Errorf("global编码错误:%v", err)
-	}
-	eva := ckks.NewEvaluator()
-	ciphertext_bytes = append([][]byte{globals.Addition}, ciphertext_bytes...)
-	_, err = compute.Run(globals.Encode(ciphertext_bytes...))
+	// 声明加密预编译合约
+	compute := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x1})]
+	// 声明计算器
+	rlk := kgen.GenRelinearizationKeyNew(sk)
+	evk := rlwe.NewMemEvaluationKeySet(rlk)
+	//编码计算器
+	evk_byte, _ := evk.MarshalBinary()
+	//编码密文
+	st1_byte, _ := st1.MarshalBinary()
+	st2_byte, _ := st2.MarshalBinary()
+	//测试加法
+	ciphertext_bytes := [][]byte{}
+	ciphertext_bytes = append(ciphertext_bytes, globals.Addition, evk_byte, st1_byte, st2_byte)
+	ans_byte, err := compute.Run(globals.Encode(ciphertext_bytes...))
 	if err != nil {
 		t.Errorf("密态数据计算出错:%v", err)
 	}
-
 	// 解密
-
+	mydec := client_utils.Decryptor{}
+	ans := new(rlwe.Ciphertext)
+	ans.UnmarshalBinary(ans_byte)
+	decode_ans := mydec.Decrypt(sk, ans)
+	if err != nil {
+		t.Errorf("密文解密出错:%v", err)
+	}
 	// 验证结果
+	for i := 0; i < len(values1); i++ {
+		fmt.Printf("%20.15f  ", decode_ans[i])
+	}
 }
+
+// // TestKeyGenerator_Run tests the Run method of the keyGenerator.
+// func TestKeyGenerator_Run(t *testing.T) {
+// 	// 初始化测试参数
+// 	name := "nihonge5201314"
+// 	// 创建 keyGenerator 实例
+// 	kg := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x4})]
+
+// 	// 调用 Run 方法
+// 	output, err := kg.Run([]byte(name))
+// 	if err != nil {
+// 		t.Fatalf("Run() error = %v", err)
+// 	}
+
+// 	// 验证
+// 	secret, err := globals.GetUserKey(name)
+// 	if err != nil {
+// 		t.Fatalf("用户未注册成功")
+// 	}
+// 	if string(output) != secret {
+// 		t.Fatalf("密码存储不正确")
+// 	}
+// 	fmt.Printf("用户%s注册成功\n", name)
+// 	globals.DeleteUser(name)
+// }
+
+// // TestKeyGenerator_RequiredGas tests the RequiredGas method of the keyGenerator.
+// func TestKeyGenerator_RequiredGas(t *testing.T) {
+// 	kg := contracts.PrecompiledContractsMap[common.BytesToAddress([]byte{0x4})]
+
+// 	// 测试 RequiredGas 方法
+// 	input := []byte("test input")
+// 	expectedGas := uint64(0) // 预期的Gas费用
+
+// 	actualGas := kg.RequiredGas(input)
+// 	if actualGas != expectedGas {
+// 		t.Errorf("RequiredGas() = %v, want %v", actualGas, expectedGas)
+// 	}
+// }

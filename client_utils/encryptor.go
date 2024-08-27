@@ -8,16 +8,16 @@ import (
 
 // 明文加密为同态加密密文，并上链
 // 接受密钥和明文作为输入
-type encryptor struct{}
+type Encryptor struct{}
 
-func (c *encryptor) encrypt(sk *rlwe.SecretKey, values interface{}) *rlwe.Ciphertext {
+func (c *Encryptor) Encrypt(sk *rlwe.SecretKey, values interface{}) *rlwe.Ciphertext {
 	var err error
 	// Encryptor
 	enc := rlwe.NewEncryptor(globals.Params, sk)
 	// Encoder
-	ecd := ckks.NewEncoder(globals.Params)
 	pt := ckks.NewPlaintext(globals.Params, globals.Params.MaxLevel())
 	// Encodes the vector of plaintext values
+	ecd := ckks.NewEncoder(globals.Params)
 	if err = ecd.Encode(values, pt); err != nil {
 		panic(err)
 	}

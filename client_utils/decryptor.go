@@ -9,9 +9,9 @@ import (
 
 // 明文加密为同态加密密文，并上链
 // 接受密钥和明文作为输入
-type decryptor struct{}
+type Decryptor struct{}
 
-func (c *decryptor) decrypt(sk *rlwe.SecretKey, ct *rlwe.Ciphertext) []float64 {
+func (c *Decryptor) Decrypt(sk *rlwe.SecretKey, ct *rlwe.Ciphertext) []float64 {
 	var err error
 	// decryptor
 	dec := rlwe.NewDecryptor(globals.Params, sk)

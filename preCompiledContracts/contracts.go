@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
+	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
 )
 
 type PrecompiledContract interface {
@@ -19,6 +20,47 @@ var PrecompiledContractsMap = map[common.Address]PrecompiledContract{
 	// common.BytesToAddress([]byte{0x2}): &encrypt{},
 	// common.BytesToAddress([]byte{0x3}): &decrypt{},
 	// common.BytesToAddress([]byte{0x4}): &keyGenerator{},
+}
+
+// 计算链上密态数据，目前为求和
+type compute struct{}
+
+func (c *compute) RequiredGas(input []byte) uint64 {
+	return 0
+}
+func (c *compute) Run(input []byte) ([]byte, error) {
+	// 第一个字节是运算方法，后面是密文序列
+	ciphertext_bytes, err := globals.Decode(input)
+	if err != nil {
+		return []byte{}, fmt.Errorf("%v", err)
+	}
+	fmt.Println("compute:字节数组个数:", len(ciphertext_bytes))
+	if bytes.Equal(ciphertext_bytes[0], globals.Addition) {
+		fmt.Println("加法")
+		evk_byte := ciphertext_bytes[1]
+		ct1_byte := ciphertext_bytes[2]
+		ct2_byte := ciphertext_bytes[3]
+		evk := new(rlwe.MemEvaluationKeySet)
+		evk.UnmarshalBinary(evk_byte)
+		eval := ckks.NewEvaluator(globals.Params, evk)
+		ct1 := new(rlwe.Ciphertext)
+		ct2 := new(rlwe.Ciphertext)
+		ct1.UnmarshalBinary(ct1_byte)
+		ct2.UnmarshalBinary(ct2_byte)
+		ct3, err := eval.AddNew(ct1, ct2)
+		if err != nil {
+			return []byte{}, err
+		}
+		ct3_byte, _ := ct3.MarshalBinary()
+		return ct3_byte, nil
+	} else if bytes.Equal(ciphertext_bytes[0], globals.Subtraction) {
+		fmt.Println("减法")
+	} else if bytes.Equal(ciphertext_bytes[0], globals.Multiplication) {
+		fmt.Println("乘法")
+	} else if bytes.Equal(ciphertext_bytes[0], globals.Division) {
+		fmt.Println("除法")
+	}
+	return []byte{1, 2, 3}, nil
 }
 
 // 明文加密为同态加密密文，并上链
@@ -64,34 +106,6 @@ var PrecompiledContractsMap = map[common.Address]PrecompiledContract{
 // func (c *decrypt) Run(input []byte) ([]byte, error) {
 // 	return []byte{1, 2, 3}, nil
 // }
-
-// 计算链上密态数据，目前为求和
-type compute struct{}
-
-func (c *compute) RequiredGas(input []byte) uint64 {
-	return 0
-}
-func (c *compute) Run(input []byte) ([]byte, error) {
-	// 第一个字节是运算方法，后面是密文序列
-	ciphertext_bytes, err := globals.Decode(input)
-	if err != nil {
-		return []byte{}, fmt.Errorf("%v", err)
-	}
-	fmt.Println("compute:字节数组个数:", len(ciphertext_bytes))
-	if bytes.Equal(ciphertext_bytes[0], globals.Addition) {
-		pt1_byte := ciphertext_bytes[1]
-		pt2_byte := ciphertext_bytes[2]
-		eva := rlwe.NewEvaluator()
-		fmt.Println("加法")
-	} else if bytes.Equal(ciphertext_bytes[0], globals.Subtraction) {
-		fmt.Println("减法")
-	} else if bytes.Equal(ciphertext_bytes[0], globals.Multiplication) {
-		fmt.Println("乘法")
-	} else if bytes.Equal(ciphertext_bytes[0], globals.Division) {
-		fmt.Println("除法")
-	}
-	return []byte{1, 2, 3}, nil
-}
 
 // type keyGenerator struct{}
 
