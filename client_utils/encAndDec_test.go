@@ -2,8 +2,8 @@ package client_utils
 
 import (
 	"fmt"
+	"github.com/nihonge/homo_blockchain/globals"
 	"math/rand"
-	"myproject/globals"
 	"testing"
 
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"

@@ -1,9 +1,9 @@
 package client_utils
 
 import (
+	"github.com/nihonge/homo_blockchain/globals"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
-	"myproject/globals"
 )
 
 // 明文加密为同态加密密文，并上链

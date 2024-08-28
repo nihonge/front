@@ -3,11 +3,11 @@ package contracts_test
 import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/nihonge/homo_blockchain/client_utils"
+	"github.com/nihonge/homo_blockchain/globals"
+	"github.com/nihonge/homo_blockchain/preCompiledContracts"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
-	"myproject/client_utils"
-	"myproject/globals"
-	"myproject/preCompiledContracts"
 	"testing"
 )
 
@@ -35,8 +35,8 @@ func TestComputeRun(t *testing.T) {
 	kgen := ckks.NewKeyGenerator(globals.Params)
 	sk := kgen.GenSecretKeyNew()
 	// 定义go中明文
-	values1 := []float64{1.1, 2.2, 3.3}
-	values2 := []float64{4.4, 5.5, 6.6}
+	values1 := []float64{1.2345678, 2.0, 7.8}
+	values2 := []float64{8.7654321, 5.5, 6.6}
 
 	//本地加密成密文
 	myenc := client_utils.Encryptor{}
@@ -54,6 +54,7 @@ func TestComputeRun(t *testing.T) {
 	//编码密文
 	st1_byte, _ := st1.MarshalBinary()
 	st2_byte, _ := st2.MarshalBinary()
+
 	//测试加法
 	ciphertext_bytes := [][]byte{}
 	ciphertext_bytes = append(ciphertext_bytes, globals.Addition, evk_byte, st1_byte, st2_byte)
@@ -70,9 +71,70 @@ func TestComputeRun(t *testing.T) {
 		t.Errorf("密文解密出错:%v", err)
 	}
 	// 验证结果
+	fmt.Print("期望:")
 	for i := 0; i < len(values1); i++ {
-		fmt.Printf("%20.15f  ", decode_ans[i])
+		fmt.Printf("%20.10f  ", values1[i]+values2[i])
 	}
+	fmt.Println()
+	fmt.Print("实际:")
+	for i := 0; i < len(values1); i++ {
+		fmt.Printf("%20.10f  ", decode_ans[i])
+	}
+	fmt.Println()
+
+	//测试减法
+	ciphertext_bytes = [][]byte{}
+	ciphertext_bytes = append(ciphertext_bytes, globals.Subtraction, evk_byte, st1_byte, st2_byte)
+	ans_byte, err = compute.Run(globals.Encode(ciphertext_bytes...))
+	if err != nil {
+		t.Errorf("密态数据计算出错:%v", err)
+	}
+	// 解密
+	mydec = client_utils.Decryptor{}
+	ans = new(rlwe.Ciphertext)
+	ans.UnmarshalBinary(ans_byte)
+	decode_ans = mydec.Decrypt(sk, ans)
+	if err != nil {
+		t.Errorf("密文解密出错:%v", err)
+	}
+	// 验证结果
+	fmt.Print("期望:")
+	for i := 0; i < len(values1); i++ {
+		fmt.Printf("%20.10f  ", values1[i]-values2[i])
+	}
+	fmt.Println()
+	fmt.Print("实际:")
+	for i := 0; i < len(values1); i++ {
+		fmt.Printf("%20.10f  ", decode_ans[i])
+	}
+	fmt.Println()
+
+	//测试乘法
+	ciphertext_bytes = [][]byte{}
+	ciphertext_bytes = append(ciphertext_bytes, globals.Multiplication, evk_byte, st1_byte, st2_byte)
+	ans_byte, err = compute.Run(globals.Encode(ciphertext_bytes...))
+	if err != nil {
+		t.Errorf("密态数据计算出错:%v", err)
+	}
+	// 解密
+	mydec = client_utils.Decryptor{}
+	ans = new(rlwe.Ciphertext)
+	ans.UnmarshalBinary(ans_byte)
+	decode_ans = mydec.Decrypt(sk, ans)
+	if err != nil {
+		t.Errorf("密文解密出错:%v", err)
+	}
+	// 验证结果
+	fmt.Print("期望:")
+	for i := 0; i < len(values1); i++ {
+		fmt.Printf("%20.10f  ", values1[i]*values2[i])
+	}
+	fmt.Println()
+	fmt.Print("实际:")
+	for i := 0; i < len(values1); i++ {
+		fmt.Printf("%20.10f  ", decode_ans[i])
+	}
+	fmt.Println()
 }
 
 // // TestKeyGenerator_Run tests the Run method of the keyGenerator.

@@ -3,7 +3,7 @@ package client_utils
 import (
 	"bytes"
 	"fmt"
-	"myproject/globals"
+	"github.com/nihonge/homo_blockchain/globals"
 	"testing"
 )
 

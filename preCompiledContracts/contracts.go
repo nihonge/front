@@ -3,7 +3,7 @@ package contracts
 import (
 	"bytes"
 	"fmt"
-	"myproject/globals"
+	"github.com/nihonge/homo_blockchain/globals"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
@@ -28,15 +28,33 @@ type compute struct{}
 func (c *compute) RequiredGas(input []byte) uint64 {
 	return 0
 }
+
+/*
+输入字节数组说明：
+
+首先创建四个字节数组[]byte：
+
+1.运算种类:
+
+	Addition          = []byte("ADD")
+	Subtraction       = []byte("SUB")
+	Multiplication    = []byte("MUL")
+
+2.编码后的运算器 （rlwe.MemEvaluationKeySet）
+
+3.密文向量a (rlwe.Ciphertext)
+
+4.密文向量b (rlwe.Ciphertext)
+
+将四个[]byte使用global.Encode编码成一个byte[]作为输入
+*/
 func (c *compute) Run(input []byte) ([]byte, error) {
-	// 第一个字节是运算方法，后面是密文序列
 	ciphertext_bytes, err := globals.Decode(input)
 	if err != nil {
 		return []byte{}, fmt.Errorf("%v", err)
 	}
-	fmt.Println("compute:字节数组个数:", len(ciphertext_bytes))
 	if bytes.Equal(ciphertext_bytes[0], globals.Addition) {
-		fmt.Println("加法")
+		fmt.Println("-------------------加法--------------------")
 		evk_byte := ciphertext_bytes[1]
 		ct1_byte := ciphertext_bytes[2]
 		ct2_byte := ciphertext_bytes[3]
@@ -54,13 +72,43 @@ func (c *compute) Run(input []byte) ([]byte, error) {
 		ct3_byte, _ := ct3.MarshalBinary()
 		return ct3_byte, nil
 	} else if bytes.Equal(ciphertext_bytes[0], globals.Subtraction) {
-		fmt.Println("减法")
+		fmt.Println("-------------------减法--------------------")
+		evk_byte := ciphertext_bytes[1]
+		ct1_byte := ciphertext_bytes[2]
+		ct2_byte := ciphertext_bytes[3]
+		evk := new(rlwe.MemEvaluationKeySet)
+		evk.UnmarshalBinary(evk_byte)
+		eval := ckks.NewEvaluator(globals.Params, evk)
+		ct1 := new(rlwe.Ciphertext)
+		ct2 := new(rlwe.Ciphertext)
+		ct1.UnmarshalBinary(ct1_byte)
+		ct2.UnmarshalBinary(ct2_byte)
+		ct3, err := eval.SubNew(ct1, ct2)
+		if err != nil {
+			return []byte{}, err
+		}
+		ct3_byte, _ := ct3.MarshalBinary()
+		return ct3_byte, nil
 	} else if bytes.Equal(ciphertext_bytes[0], globals.Multiplication) {
-		fmt.Println("乘法")
-	} else if bytes.Equal(ciphertext_bytes[0], globals.Division) {
-		fmt.Println("除法")
+		fmt.Println("-------------------乘法--------------------")
+		evk_byte := ciphertext_bytes[1]
+		ct1_byte := ciphertext_bytes[2]
+		ct2_byte := ciphertext_bytes[3]
+		evk := new(rlwe.MemEvaluationKeySet)
+		evk.UnmarshalBinary(evk_byte)
+		eval := ckks.NewEvaluator(globals.Params, evk)
+		ct1 := new(rlwe.Ciphertext)
+		ct2 := new(rlwe.Ciphertext)
+		ct1.UnmarshalBinary(ct1_byte)
+		ct2.UnmarshalBinary(ct2_byte)
+		ct3, err := eval.MulNew(ct1, ct2)
+		if err != nil {
+			return []byte{}, err
+		}
+		ct3_byte, _ := ct3.MarshalBinary()
+		return ct3_byte, nil
 	}
-	return []byte{1, 2, 3}, nil
+	return []byte{1, 2, 3}, fmt.Errorf("不支持的运算")
 }
 
 // 明文加密为同态加密密文，并上链

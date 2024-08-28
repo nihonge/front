@@ -26,7 +26,6 @@ var (
 	Addition          = []byte("ADD")
 	Subtraction       = []byte("SUB")
 	Multiplication    = []byte("MUL")
-	Division          = []byte("DIV")
 )
 
 func init() {

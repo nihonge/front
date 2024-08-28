@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"myproject/globals"
-	"myproject/preCompiledContracts"
+	"github.com/nihonge/homo_blockchain/globals"
+	"github.com/nihonge/homo_blockchain/preCompiledContracts"
 	"os"
 	"strings"
 

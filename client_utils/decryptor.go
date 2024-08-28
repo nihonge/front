@@ -1,7 +1,7 @@
 package client_utils
 
 import (
-	"myproject/globals"
+	"github.com/nihonge/homo_blockchain/globals"
 
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"github.com/tuneinsight/lattigo/v6/schemes/ckks"

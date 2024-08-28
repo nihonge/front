@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	"github.com/nihonge/homo_blockchain/globals"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"io"
 	"log"
-	"myproject/globals"
 )
 
 // keyGenerator负责产生同态加密密钥，输入用户名（任意），会安全地产生一个密钥（与用户名无关），用来加密数据并上传
