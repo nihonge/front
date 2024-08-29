@@ -94,9 +94,6 @@ func TestComputeRun(t *testing.T) {
 	ans = new(rlwe.Ciphertext)
 	ans.UnmarshalBinary(ans_byte)
 	decode_ans = mydec.Decrypt(sk, ans)
-	if err != nil {
-		t.Errorf("密文解密出错:%v", err)
-	}
 	// 验证结果
 	fmt.Print("期望:")
 	for i := 0; i < len(values1); i++ {

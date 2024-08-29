@@ -3,9 +3,8 @@ package contracts
 import (
 	"bytes"
 	"fmt"
-	"github.com/nihonge/homo_blockchain/globals"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/nihonge/homo_blockchain/globals"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
 )

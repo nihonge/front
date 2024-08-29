@@ -3,16 +3,12 @@ package client_utils
 import (
 	"fmt"
 	"github.com/nihonge/homo_blockchain/globals"
+	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"math/rand"
 	"testing"
-
-	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 )
 
 func TestEncAndDec(t *testing.T) {
-	fmt.Println(globals.Params.MaxSlots())
-	fmt.Println(globals.Params.MaxLevel())
-
 	sk := rlwe.NewSecretKey(globals.Params)
 	// Vector of plaintext values
 	want := make([]float64, globals.Params.MaxSlots())
