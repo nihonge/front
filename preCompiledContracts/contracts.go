@@ -15,7 +15,7 @@ type PrecompiledContract interface {
 }
 
 var PrecompiledContractsMap = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{0x1}): &compute{},
+	common.BytesToAddress([]byte{0x21}): &compute{},
 	// common.BytesToAddress([]byte{0x2}): &encrypt{},
 	// common.BytesToAddress([]byte{0x3}): &decrypt{},
 	// common.BytesToAddress([]byte{0x4}): &keyGenerator{},

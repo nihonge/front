@@ -1,12 +1,14 @@
 package globals
 
 import (
+	"bytes"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -17,8 +19,8 @@ import (
 // 声明全局变量
 var (
 	Params            ckks.Parameters           //实数同态加密参数
-	private_key_store = make(map[string]string) // 用于存储用户密钥的全局变量 sk.MarshalBinary(),将密钥转为字节流再转为字符串
-	address_store     = make(map[string]string) // 用于存储用户地址的全局变量
+	private_key_store = make(map[string][]byte) // 用于存储用户密钥的全局变量 sk.MarshalBinary(),将密钥转为字节流再转为字符串
+	address_store     = make(map[string][]byte) // 用于存储用户地址的全局变量
 	mu                sync.Mutex                // 用于确保并发安全
 	folderName        string                    // 数据存储的文件夹名 /data
 	private_key_file  string
@@ -26,6 +28,7 @@ var (
 	Addition          = []byte("ADD")
 	Subtraction       = []byte("SUB")
 	Multiplication    = []byte("MUL")
+	CurrentUser       string //客户端当前登录用户
 )
 
 func init() {
@@ -103,7 +106,7 @@ func loadUserData() {
 }
 
 // registerUser 注册新用户
-func RegisterUser(username, password string) error {
+func RegisterUser(username string, password []byte) error {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -158,25 +161,25 @@ func DeleteUser(username string) error {
 	return nil
 }
 
-// getUser 获取用户密码
-func GetUserKey(username string) (string, error) {
+// 获取用户同态加密密钥字节数组
+func GetUserPrivateKey(username string) ([]byte, error) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	password, exists := private_key_store[username]
 	if !exists {
-		return "", fmt.Errorf("user %s does not exist", username)
+		return nil, fmt.Errorf("user %s does not exist", username)
 	}
 
 	return password, nil
 }
-func GetUserAddr(username string) (string, error) {
+func GetUserAddr(username string) ([]byte, error) {
 	mu.Lock()
 	defer mu.Unlock()
 
 	password, exists := address_store[username]
 	if !exists {
-		return "", fmt.Errorf("user %s does not exist", username)
+		return nil, fmt.Errorf("user %s does not exist", username)
 	}
 
 	return password, nil
@@ -194,12 +197,12 @@ func ShowUser() {
 }
 
 // 密钥转地址 → 计算 SHA-256 哈希值的字符串
-func KeyToAddr(key string) string {
+func KeyToAddr(key []byte) []byte {
 	hash := sha256.New()
-	hash.Write([]byte(key))
+	hash.Write(key)
 	hashBytes := hash.Sum(nil)
 	// 将哈希值转换为十六进制字符串
-	return hex.EncodeToString(hashBytes)
+	return hashBytes
 }
 
 // encode 将多个byte[]编码为一个byte[]，使用四字节长度+内容的方案
@@ -243,4 +246,41 @@ func Decode(encodedData []byte) ([][]byte, error) {
 	}
 
 	return result, nil
+}
+
+// Compress 将输入的字节数组压缩为 gzip 格式
+// 主要用于压缩存储的密钥
+func Compress(data []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	gzipWriter := gzip.NewWriter(&buf)
+
+	_, err := gzipWriter.Write(data)
+	if err != nil {
+		return nil, err
+	}
+
+	// 调用 Close 以确保数据完整写入
+	err = gzipWriter.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func Decompress(compressedData []byte) ([]byte, error) {
+	buf := bytes.NewReader(compressedData)
+	gzipReader, err := gzip.NewReader(buf)
+	if err != nil {
+		return nil, err
+	}
+	defer gzipReader.Close()
+
+	var result bytes.Buffer
+	_, err = io.Copy(&result, gzipReader)
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Bytes(), nil
 }
