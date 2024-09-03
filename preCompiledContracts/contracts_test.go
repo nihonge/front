@@ -3,8 +3,8 @@ package contracts_test
 import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/nihonge/homo_blockchain/client_utils"
 	"github.com/nihonge/homo_blockchain/globals"
+	"github.com/nihonge/homo_blockchain/homomorphic"
 	"github.com/nihonge/homo_blockchain/preCompiledContracts"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
@@ -39,7 +39,7 @@ func TestComputeRun(t *testing.T) {
 	values2 := []float64{8.7654321, 5.5, 6.6}
 
 	//本地加密成密文
-	myenc := client_utils.Encryptor{}
+	myenc := homomorphic.Encryptor{}
 	st1 := myenc.Encrypt(sk, values1)
 	st2 := myenc.Encrypt(sk, values2)
 
@@ -63,7 +63,7 @@ func TestComputeRun(t *testing.T) {
 		t.Errorf("密态数据计算出错:%v", err)
 	}
 	// 解密
-	mydec := client_utils.Decryptor{}
+	mydec := homomorphic.Decryptor{}
 	ans := new(rlwe.Ciphertext)
 	ans.UnmarshalBinary(ans_byte)
 	decode_ans := mydec.Decrypt(sk, ans)
@@ -90,7 +90,7 @@ func TestComputeRun(t *testing.T) {
 		t.Errorf("密态数据计算出错:%v", err)
 	}
 	// 解密
-	mydec = client_utils.Decryptor{}
+	mydec = homomorphic.Decryptor{}
 	ans = new(rlwe.Ciphertext)
 	ans.UnmarshalBinary(ans_byte)
 	decode_ans = mydec.Decrypt(sk, ans)
@@ -114,7 +114,7 @@ func TestComputeRun(t *testing.T) {
 		t.Errorf("密态数据计算出错:%v", err)
 	}
 	// 解密
-	mydec = client_utils.Decryptor{}
+	mydec = homomorphic.Decryptor{}
 	ans = new(rlwe.Ciphertext)
 	ans.UnmarshalBinary(ans_byte)
 	decode_ans = mydec.Decrypt(sk, ans)

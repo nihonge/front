@@ -2,16 +2,19 @@ package blockchain
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"reflect"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/nihonge/homo_blockchain/globals"
 	"github.com/nihonge/homo_blockchain/homomorphic"
+	"github.com/nihonge/homo_blockchain/http"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
-	"log"
-	"reflect"
 )
 
 var (
@@ -81,9 +84,19 @@ func compute(computeType string, values1 []float64, values2 []float64) error {
 		Data: data,
 	}
 	// 调用预编译合约
-	ans_byte, err := client.CallContract(context.Background(), msg, nil)
+	// ans_byte, err := client.CallContract(context.Background(), msg, nil)
+	// if err != nil {
+	// 	log.Fatalf("Failed to call contract: %v", err)
+	// }
+
+	// 发送数据至服务器
+	ret_json, err := http.PostToServer(msg)
 	if err != nil {
-		log.Fatalf("Failed to call contract: %v", err)
+		return err
+	}
+	ans_byte, ok := ret_json["data"].([]byte)
+	if !ok {
+		return errors.New("callContract.go 99:type error")
 	}
 
 	// 解密
@@ -93,7 +106,7 @@ func compute(computeType string, values1 []float64, values2 []float64) error {
 	decode_ans := mydec.Decrypt(sk, ans)
 	// 验证结果
 	fmt.Println()
-	fmt.Print("实际:")
+	fmt.Print("实际结果:")
 	for i := 0; i < len(values1); i++ {
 		fmt.Printf("%20.10f  ", decode_ans[i])
 	}

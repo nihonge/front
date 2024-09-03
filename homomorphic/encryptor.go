@@ -1,8 +1,6 @@
 package homomorphic
 
 import (
-	"fmt"
-
 	"github.com/nihonge/homo_blockchain/globals"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
@@ -29,8 +27,8 @@ func (c *Encryptor) Encrypt(sk *rlwe.SecretKey, values interface{}) *rlwe.Cipher
 	if ct, err = enc.EncryptNew(pt); err != nil {
 		panic(err)
 	}
-	ct_byte, _ := ct.MarshalBinary()
-	fmt.Println("level=", pt.Level())
-	fmt.Println("密文长度:", len(ct_byte))
+	// ct_byte, _ := ct.MarshalBinary()
+	// fmt.Println("level=", pt.Level())
+	// fmt.Println("密文长度:", len(ct_byte))
 	return ct
 }

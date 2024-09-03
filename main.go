@@ -31,12 +31,11 @@ func main() {
 			fmt.Println("请选择操作：")
 			fmt.Println("1. 注册生成密钥")
 			fmt.Println("2. 登录")
-			fmt.Println("3. 退出")
+			fmt.Println("3. 通过密钥文件登录（请将密钥文件放在当前文件夹下）")
+			fmt.Println("4. 退出")
 			fmt.Print("输入操作编号: ")
-
 			input, _ := reader.ReadString('\n')
 			input = strings.TrimSpace(input)
-
 			switch input {
 			case "1":
 				fmt.Print("请输入新注册用户名:")
@@ -45,21 +44,18 @@ func main() {
 				// 创建 keyGenerator 实例
 				kg := &homomorphic.KeyGenerator{}
 				err := kg.GenerateKey(username)
-				switch err {
-				case fmt.Errorf("用户已注册"):
-					fmt.Println("用户已注册")
-				case nil:
+				if err != nil {
+					fmt.Printf("%v\n", err)
+				} else {
 					globals.CurrentUser = username
 					state = User
-				default:
-					fmt.Println("密钥生成失败")
+					addr, _ := globals.GetUserAddr(username)
+					data, err := json.Marshal(addr)
+					if err != nil {
+						log.Fatalf("Failed to marshal user data: %v", err)
+					}
+					fmt.Println("生成密钥为", string(data))
 				}
-				addr, _ := globals.GetUserAddr(username)
-				data, err := json.Marshal(addr)
-				if err != nil {
-					log.Fatalf("Failed to marshal user data: %v", err)
-				}
-				fmt.Println("生成密钥为", string(data))
 			case "2":
 				fmt.Print("请输入用户名:")
 				username, _ := reader.ReadString('\n')
@@ -110,6 +106,19 @@ func main() {
 				// 	state = User
 				// }
 			case "3":
+				fmt.Print("请输入用户名:")
+				username, _ := reader.ReadString('\n')
+				username = strings.TrimSpace(username)
+				key_name := fmt.Sprintf("%v_key.txt", username)
+				key, err := os.ReadFile(key_name)
+				if err != nil {
+					fmt.Println("密钥导入错误:", err)
+				}
+				globals.RegisterUser(username, key)
+				fmt.Println("密钥导入成功！")
+				state = User
+				globals.CurrentUser = username
+			case "4":
 				fmt.Println("退出程序")
 				return
 			default:
@@ -118,7 +127,8 @@ func main() {
 		case User:
 			fmt.Println("请选择操作：")
 			fmt.Println("1. 密态数据计算")
-			fmt.Println("2. 退出登录")
+			fmt.Println("2. 导出密钥")
+			fmt.Println("3. 退出登录")
 			fmt.Print("输入操作编号: ")
 
 			input, _ := reader.ReadString('\n')
@@ -142,13 +152,22 @@ func main() {
 				// 检查向量长度是否相等
 				if len(vector1) != len(vector2) {
 					fmt.Println("错误：向量长度不相等")
-					return
+					continue
 				}
 				err := blockchain.Call("0x22", computeType, vector1, vector2)
 				if err != nil {
 					fmt.Printf("调用合约出错:%v\n", err)
 				}
 			case "2":
+				data, _ := globals.GetUserPrivateKey(globals.CurrentUser)
+				// 将字节数组写入文件
+				key_name := fmt.Sprintf("%v_key.txt", globals.CurrentUser)
+				err := os.WriteFile(key_name, data, 0644)
+				if err != nil {
+					fmt.Println("密钥导出错误:", err)
+				}
+				fmt.Printf("密钥文件导出成功:%v\n", key_name)
+			case "3":
 				// 在程序退出时保存数据
 				state = Guest
 			default:
