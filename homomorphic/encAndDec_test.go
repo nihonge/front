@@ -2,7 +2,7 @@ package homomorphic
 
 import (
 	"fmt"
-	"github.com/nihonge/homo_blockchain/globals"
+	"github.com/nihonge/front/globals"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"math/rand"
 	"testing"

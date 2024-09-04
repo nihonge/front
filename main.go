@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/nihonge/homo_blockchain/blockchain"
-	"github.com/nihonge/homo_blockchain/globals"
-	"github.com/nihonge/homo_blockchain/homomorphic"
+	"github.com/nihonge/front/back"
+	"github.com/nihonge/front/globals"
+	"github.com/nihonge/front/homomorphic"
 	"log"
 	"os"
 	"strconv"
@@ -127,8 +127,10 @@ func main() {
 		case User:
 			fmt.Println("请选择操作：")
 			fmt.Println("1. 密态数据计算")
-			fmt.Println("2. 导出密钥")
-			fmt.Println("3. 退出登录")
+			fmt.Println("2. 上传数据")
+			fmt.Println("3. 获取数据")
+			fmt.Println("4. 导出密钥")
+			fmt.Println("5. 退出登录")
 			fmt.Print("输入操作编号: ")
 
 			input, _ := reader.ReadString('\n')
@@ -140,9 +142,13 @@ func main() {
 				fmt.Println("1. 加法")
 				fmt.Println("2. 减法")
 				fmt.Println("3. 乘法")
-				fmt.Print("输入数字编号：")
+				fmt.Print("输入操作编号：")
 				computeType, _ := reader.ReadString('\n')
 				computeType = strings.TrimSpace(computeType)
+				if computeType != "1" && computeType != "2" && computeType != "3" {
+					fmt.Println("无效的操作编号，请重新输入")
+					continue
+				}
 				// 从命令行读取第一个向量
 				fmt.Println("请输入第一个向量（以空格分隔的数字）：")
 				vector1 := readVector()
@@ -154,20 +160,30 @@ func main() {
 					fmt.Println("错误：向量长度不相等")
 					continue
 				}
-				err := blockchain.Call("0x22", computeType, vector1, vector2)
+				err := back.Compute(computeType, vector1, vector2)
 				if err != nil {
-					fmt.Printf("调用合约出错:%v\n", err)
+					log.Println("调用合约出错:", err)
 				}
 			case "2":
+				err := back.UploadData("1", []byte("helloworld"))
+				if err != nil {
+					log.Println(err)
+				}
+			case "3":
+				err := back.GetData("nihonge")
+				if err != nil {
+					log.Println(err)
+				}
+			case "4":
 				data, _ := globals.GetUserPrivateKey(globals.CurrentUser)
 				// 将字节数组写入文件
 				key_name := fmt.Sprintf("%v_key.txt", globals.CurrentUser)
 				err := os.WriteFile(key_name, data, 0644)
 				if err != nil {
-					fmt.Println("密钥导出错误:", err)
+					log.Println("密钥导出错误:", err)
 				}
 				fmt.Printf("密钥文件导出成功:%v\n", key_name)
-			case "3":
+			case "5":
 				// 在程序退出时保存数据
 				state = Guest
 			default:

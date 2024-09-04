@@ -1,7 +1,7 @@
 package homomorphic
 
 import (
-	"github.com/nihonge/homo_blockchain/globals"
+	"github.com/nihonge/front/globals"
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
 )

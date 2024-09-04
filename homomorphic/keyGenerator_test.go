@@ -3,7 +3,7 @@ package homomorphic
 import (
 	"bytes"
 	"fmt"
-	"github.com/nihonge/homo_blockchain/globals"
+	"github.com/nihonge/front/globals"
 	"testing"
 )
 
